@@ -239,6 +239,23 @@ http_dd_set_flush_bytes(LogDriver *d, glong flush_bytes)
   self->flush_bytes = flush_bytes;
 }
 
+void
+http_dd_set_batch_prefix(LogDriver *d, const gchar *batch_prefix)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  g_free(self->batch_prefix);
+  self->batch_prefix = g_strdup(batch_prefix);
+}
+
+void
+http_dd_set_batch_suffix(LogDriver *d, const gchar *batch_suffix)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  g_free(self->batch_suffix);
+  self->batch_suffix = g_strdup(batch_suffix);
+}
 
 static gchar *
 _sanitize_curl_debug_message(const gchar *data, gsize size)
@@ -452,6 +469,19 @@ _map_http_status_to_worker_status(glong http_code)
   return retval;
 }
 
+
+static void _add_frame_to_batch(HTTPDestinationDriver *self)
+{
+  if (self->batch_prefix != NULL)
+    {
+      g_string_prepend(self->request_body, self->batch_prefix);
+    }
+  if (self->batch_suffix != NULL)
+    {
+      g_string_append(self->request_body, self->batch_suffix);
+    }
+}
+
 /* we flush the accumulated data if
  *   1) we reach batch_size,
  *   2) the message queue becomes empty
@@ -465,6 +495,8 @@ _flush(LogThreadedDestDriver *s)
 
   if (self->super.batch_size == 0)
     return WORKER_INSERT_RESULT_SUCCESS;
+
+  _add_frame_to_batch(self);
 
   curl_easy_setopt(self->curl, CURLOPT_HTTPHEADER, self->request_headers);
   curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, self->request_body->str);
