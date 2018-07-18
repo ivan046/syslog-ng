@@ -469,8 +469,14 @@ _map_http_status_to_worker_status(glong http_code)
   return retval;
 }
 
+static void
+_reinit_request_body(HTTPDestinationDriver *self)
+{
+  g_string_truncate(self->request_body, 0);
+}
 
-static void _add_frame_to_batch(HTTPDestinationDriver *self)
+static void
+_add_frame_to_batch(HTTPDestinationDriver *self)
 {
   if (self->batch_prefix != NULL)
     {
@@ -532,7 +538,7 @@ _flush(LogThreadedDestDriver *s)
   retval = _map_http_status_to_worker_status(http_code);
 
 exit:
-  g_string_truncate(self->request_body, 0);
+  _reinit_request_body(self);
   curl_slist_free_all(self->request_headers);
   self->request_headers = NULL;
   return retval;
@@ -602,6 +608,7 @@ http_dd_init(LogPipe *s)
                                        SYSLOG_NG_VERSION, curl_info->version);
 
   _setup_static_options_in_curl(self);
+  _reinit_request_body(self);
 
   return log_threaded_dest_driver_init_method(s);
 }
