@@ -240,21 +240,21 @@ http_dd_set_flush_bytes(LogDriver *d, glong flush_bytes)
 }
 
 void
-http_dd_set_batch_prefix(LogDriver *d, const gchar *batch_prefix)
+http_dd_set_body_prefix(LogDriver *d, const gchar *body_prefix)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
-  g_free(self->batch_prefix);
-  self->batch_prefix = g_strdup(batch_prefix);
+  g_free(self->body_prefix);
+  self->body_prefix = g_strdup(body_prefix);
 }
 
 void
-http_dd_set_batch_suffix(LogDriver *d, const gchar *batch_suffix)
+http_dd_set_body_suffix(LogDriver *d, const gchar *body_suffix)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
-  g_free(self->batch_suffix);
-  self->batch_suffix = g_strdup(batch_suffix);
+  g_free(self->body_suffix);
+  self->body_suffix = g_strdup(body_suffix);
 }
 
 static gchar *
@@ -473,15 +473,15 @@ static void
 _reinit_request_body(HTTPDestinationDriver *self)
 {
   g_string_truncate(self->request_body, 0);
-  if (self->batch_prefix)
-    g_string_append(self->request_body, self->batch_prefix);
+  if (self->body_prefix)
+    g_string_append(self->request_body, self->body_prefix);
 }
 
 static void
 _finish_request_body(HTTPDestinationDriver *self)
 {
-  if (self->batch_suffix != NULL)
-    g_string_append(self->request_body, self->batch_suffix);
+  if (self->body_suffix != NULL)
+    g_string_append(self->request_body, self->body_suffix);
 }
 
 /* we flush the accumulated data if
@@ -569,7 +569,7 @@ _insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
 
-  if (self->flush_lines > 0)
+  if (self->flush_lines > 0 || self->flush_bytes > 0)
     return _insert_batched(self, msg);
   else
     return _insert_single(self, msg);
