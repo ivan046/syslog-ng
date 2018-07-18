@@ -473,19 +473,15 @@ static void
 _reinit_request_body(HTTPDestinationDriver *self)
 {
   g_string_truncate(self->request_body, 0);
+  if (self->batch_prefix)
+    g_string_append(self->request_body, self->batch_prefix);
 }
 
 static void
-_add_frame_to_batch(HTTPDestinationDriver *self)
+_finish_request_body(HTTPDestinationDriver *self)
 {
-  if (self->batch_prefix != NULL)
-    {
-      g_string_prepend(self->request_body, self->batch_prefix);
-    }
   if (self->batch_suffix != NULL)
-    {
-      g_string_append(self->request_body, self->batch_suffix);
-    }
+    g_string_append(self->request_body, self->batch_suffix);
 }
 
 /* we flush the accumulated data if
@@ -502,7 +498,7 @@ _flush(LogThreadedDestDriver *s)
   if (self->super.batch_size == 0)
     return WORKER_INSERT_RESULT_SUCCESS;
 
-  _add_frame_to_batch(self);
+  _finish_request_body(self);
 
   curl_easy_setopt(self->curl, CURLOPT_HTTPHEADER, self->request_headers);
   curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, self->request_body->str);
